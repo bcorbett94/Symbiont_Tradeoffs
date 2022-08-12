@@ -1,3 +1,5 @@
+library(steponeR)
+library(tidyverse)
 plates <- list.files(path = "Data/qPCR", pattern = ".txt", full.names = TRUE)
 plates
 #pl
@@ -11,26 +13,22 @@ df <- steponeR(files = plates,
                extract = list(C = 0.813, D = 0.813))
 qpcr <- df$result
 
+qpcr<-qpcr %>%
+  mutate(propD = case_when(is.na(D.CT.mean) & !is.na(C.CT.mean) ~ 0,
+                                        !is.na(D.CT.mean) & is.na(C.CT.mean) ~ 1,
+                                        !is.na(C.D) ~ 1/((C.D)+1))) 
+
 qpcr %>%
-  group_by(
-    D.CT.mean, C.CT.mean
-  )
-  
+  select(FragID = Sample.Name,propD) %>%
+  filter(!FragID == "positive",!FragID == "negative") %>% 
+  write_csv("Data/qPCR/proportionD.csv") 
 
-  is.na(qpcr$D.CT.mean)
-
-  qpcr<-mutate (proportion1 = if_else(is.na(D.CT.mean) == TRUE), 0 , 1)
-
-  
 
 #mutate(prop = 1/((C.D)+1))
 #%>% head()
 view(qpcr
   )
 #add_column()
-# View data
-is.na_replace_0 <- data$x_num                               # Duplicate first column
-is.na_replace_0[is.na(is.na_replace_0)] <- 0                # Replace by 0
 
 #fluornorm-> flouroscent normalization, has to do with the difference in fluoroscent dyes VIC & FAM
 # took 2.234 cycles more for C to amplify vs D for 1,
@@ -42,4 +40,3 @@ is.na_replace_0[is.na(is.na_replace_0)] <- 0                # Replace by 0
   #add_column()
   
 View(qpcr)
-ap
