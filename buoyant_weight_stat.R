@@ -7,7 +7,7 @@ bw_mastersheet <- read_csv("Data/Buoyant_Weight/bw_mastersheet.csv") %>%
          colony = str_sub(FragID, 1, 2)) %>%
   full_join(propD)
 
-# Convert buoyant weight to dry weight
+# Create function to convert buoyant weight to dry weight based on temperature and skeletal density
 bw.dw <- function(bw, temp, CoralDens) {
   StdAir <- 39.092
   StdFW <- 0.0047263 * temp + 21.474
@@ -18,11 +18,12 @@ bw.dw <- function(bw, temp, CoralDens) {
   return(CoralWeight)
 }
 
+# Remove pedestal weight, and convert coral buoyant weight to dry weight
 bw_mastersheet %>%
   mutate(bw_coral = case_when(pedestal == 1 ~ weight - 2.308,
                               pedestal == 2 ~ weight - 2.860),
-        coraldens = case_when(species == "T" ~ 2.1,
-                              species == "P" ~ 2.1),
+        coraldens = case_when(species == "T" ~ 2.1,                # REPLACE 2.1 WITH TURBINARIA SKELETAL DENSITY
+                              species == "P" ~ 2.1),               # REPLACE 2.1 WITH POCILLOPORA SKELETAL DENSITY
      weight_coral = pmap_dbl(.l = list(bw_coral, as.numeric(temp), coraldens), ~bw.dw(..1, ..2, ..3)))
   
 
