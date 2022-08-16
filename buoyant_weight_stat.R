@@ -6,13 +6,26 @@ bw_mastersheet <- read_csv("Data/Buoyant_Weight/bw_mastersheet.csv") %>%
   mutate(species = str_sub(FragID, 1, 1),
          colony = str_sub(FragID, 1, 2)) %>%
   full_join(propD)
+
+# Convert buoyant weight to dry weight
+bw.dw <- function(bw, temp, CoralDens) {
+  StdAir <- 39.092
+  StdFW <- 0.0047263 * temp + 21.474
+  StdSW <- 0.0052731 * temp + 21.003
+  StdDens <- 1/(1-(StdFW/StdAir))
+  SWDens <- StdDens*(1-(StdSW/StdAir))
+  CoralWeight <- bw/(1-(SWDens/CoralDens))
+  return(CoralWeight)
+}
+
+bw_mastersheet %>%
+  mutate(bw_coral = case_when(pedestal == 1 ~ weight - 2.308,
+                              pedestal == 2 ~ weight - 2.860),
+        coraldens = case_when(species == "T" ~ 2.1,
+                              species == "P" ~ 2.1),
+     weight_coral = pmap_dbl(.l = list(bw_coral, as.numeric(temp), coraldens), ~bw.dw(..1, ..2, ..3)))
   
-# Calculate percent growth
-df <- bw_mastersheet %>%
-  group_by(FragID,colony, species, propD) %>%
-  summarise(perc_change = (weight[TimePoint == 3] -weight[TimePoint == 1])/(weight[TimePoint == 1])*100)
-  #summarise(perc_change = (weight[TimePoint == 2] -weight[TimePoint == 1])/(weight[TimePoint == 1])*100)
-#group_By<- tidyverse function that uses column names (no spaces, lower case etc), to make certain cgoups 
+
 
 
 #############
@@ -28,7 +41,13 @@ fig %+% filter(bw_mastersheet, !is.na(species))
 # There are quite a few frags that decrease in weight between time points
 # and we need to QC these. Did they break? Did they have partial mortality?
 
-
+#############
+# Calculate percent growth
+df <- bw_mastersheet %>%
+  group_by(FragID,colony, species, propD) %>%
+  summarise(perc_change = (weight[TimePoint == 3] -weight[TimePoint == 1])/(weight[TimePoint == 1])*100)
+#summarise(perc_change = (weight[TimePoint == 2] -weight[TimePoint == 1])/(weight[TimePoint == 1])*100)
+#group_By<- tidyverse function that uses column names (no spaces, lower case etc), to make certain cgoups 
 
 
 #############
