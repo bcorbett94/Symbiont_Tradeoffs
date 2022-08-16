@@ -14,10 +14,11 @@ df <- bw_mastersheet %>%
   #summarise(perc_change = (weight[TimePoint == 2] -weight[TimePoint == 1])/(weight[TimePoint == 1])*100)
 #group_By<- tidyverse function that uses column names (no spaces, lower case etc), to make certain cgoups 
 df %>%
-  filter(species == "P") 
-  #ggplot(aes(x=colony, y=perc_change, color = propD))+geom_point()
-tp2p<-qplot(colony,perc_change, data = df, color = propD, geom=c("point","smooth"))
+  filter(species == "P") %>%
+  ggplot(aes(x=propD, y=perc_change, color = colony))+geom_point()#for P1 & P2
+df %>%
+  filter(species == "T") %>%
+  ggplot(aes(x=propD, y=perc_change, color = colony))+geom_point()
 
-tp2p
-mod<-lm(perc_change ~ propD*colony, data = filter(df, species == "P"))
+mod<-lm(perc_change ~ propD*colony, data = filter(df, species == "T"))
 anova(mod)
