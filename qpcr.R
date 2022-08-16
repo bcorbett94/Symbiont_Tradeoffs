@@ -1,5 +1,6 @@
 library(steponeR)
 library(tidyverse)
+library(dplyr)
 plates <- list.files(path = "Data/qPCR", pattern = ".txt", full.names = TRUE)
 plates
 #pl
@@ -25,14 +26,16 @@ dupesamp <- qpcr %>%
   filter(n > 1)
 dupesamp
 
-dupes <- qpcr %>%
-  filter(Sample.Name %in% dupes$Sample.Name)
+dupes<- qpcr %>%
+  filter(Sample.Name %in% dupesamp$Sample.Name)
+
 
 nondupes <- qpcr %>%
   filter(!Sample.Name %in% dupes$Sample.Name)
 
 # Look at the duplicated samples to see which runs are best
 dupes %>% arrange(Sample.Name)
+
 # across the board, samples run on the 7.22 plate worked better than the 7.02 plate, so pick those...
 
 # pick the best rows from the duplicated samples

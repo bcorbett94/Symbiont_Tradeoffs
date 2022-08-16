@@ -22,3 +22,4 @@ df %>%
 
 mod<-lm(perc_change ~ propD*colony, data = filter(df, species == "T"))
 anova(mod)
+
