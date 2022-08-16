@@ -13,12 +13,38 @@ df <- steponeR(files = plates,
                extract = list(C = 0.813, D = 0.813))
 qpcr <- df$result
 
+# Calculate proportion D for each sample
 qpcr<-qpcr %>%
   mutate(propD = case_when(is.na(D.CT.mean) & !is.na(C.CT.mean) ~ 0,
                                         !is.na(D.CT.mean) & is.na(C.CT.mean) ~ 1,
                                         !is.na(C.D) ~ 1/((C.D)+1))) 
 
-qpcr %>%
+# Filter out duplicates (run on muiltiple plates)
+dupesamp <- qpcr %>%
+  count(Sample.Name) %>%
+  filter(n > 1)
+dupesamp
+
+dupes <- qpcr %>%
+  filter(Sample.Name %in% dupes$Sample.Name)
+
+nondupes <- qpcr %>%
+  filter(!Sample.Name %in% dupes$Sample.Name)
+
+# Look at the duplicated samples to see which runs are best
+dupes %>% arrange(Sample.Name)
+# across the board, samples run on the 7.22 plate worked better than the 7.02 plate, so pick those...
+
+# pick the best rows from the duplicated samples
+best <- dupes %>%
+  filter(File.Name == "bc_symtrad_7.22.txt")
+
+# Merge best runs of dupes back with all the nondupes
+qpcr_good <- bind_rows(nondupes, best)
+
+
+
+qpcr_good %>%
   select(FragID = Sample.Name,propD) %>%
   filter(!FragID == "positive",!FragID == "negative") %>% 
   write_csv("Data/qPCR/proportionD.csv") 
