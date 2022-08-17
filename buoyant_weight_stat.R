@@ -19,7 +19,7 @@ bw.dw <- function(bw, temp, CoralDens) {
 }
 
 # Remove pedestal weight, and convert coral buoyant weight to dry weight
-bw_mastersheet %>%
+bw_mastersheet <- bw_mastersheet %>%
   mutate(bw_coral = case_when(pedestal == 1 ~ weight - 2.308,
                               pedestal == 2 ~ weight - 2.860),
         coraldens = case_when(species == "T" ~ 2.1,                # REPLACE 2.1 WITH TURBINARIA SKELETAL DENSITY
@@ -31,7 +31,7 @@ bw_mastersheet %>%
 
 #############
 # Plot weight over time
-fig <- ggplot(bw_mastersheet, aes(x = TimePoint, y = log(weight), 
+fig <- ggplot(bw_mastersheet, aes(x = date, y = weight_coral, 
                                   group = FragID, color = colony)) +
   geom_point() +
   geom_line() +
@@ -41,12 +41,15 @@ fig %+% filter(bw_mastersheet, !is.na(species))
 
 # There are quite a few frags that decrease in weight between time points
 # and we need to QC these. Did they break? Did they have partial mortality?
+lost_weight <- bw_mastersheet %>%
+  group_by(FragID) %>%
+  filter(weight_coral[TimePoint == 2] < weight_coral[TimePoint == 1])
 
 #############
 # Calculate percent growth
 df <- bw_mastersheet %>%
   group_by(FragID,colony, species, propD) %>%
-  summarise(perc_change = (weight[TimePoint == 3] -weight[TimePoint == 1])/(weight[TimePoint == 1])*100)
+  summarise(perc_change = (weight_coral[TimePoint == 3] - weight_coral[TimePoint == 1])/(weight_coral[TimePoint == 1])*100)
 #summarise(perc_change = (weight[TimePoint == 2] -weight[TimePoint == 1])/(weight[TimePoint == 1])*100)
 #group_By<- tidyverse function that uses column names (no spaces, lower case etc), to make certain cgoups 
 
@@ -73,9 +76,4 @@ df %>%
 mod<-lm(perc_change ~ propD*colony, data = filter(df, species == "T"))
 anova(mod)
 
-<<<<<<< HEAD
-=======
 
-#############
-
->>>>>>> 1dc57c46a431cbb073cdc9eac6f3b73df04203dc
