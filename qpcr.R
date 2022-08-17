@@ -24,6 +24,7 @@ qpcr<-qpcr %>%
 qpcr<-separate(qpcr, col = Sample.Name, into = c('Sample.Name','Dilution'), sep = ':', remove = TRUE, convert = FALSE, extra = "warn", fill = "warn")
 qpcr
 # Filter out duplicates (run on muiltiple plates)
+
 dupesamp <- qpcr %>%
   count(Sample.Name) %>%
   filter(n > 2)
@@ -37,18 +38,21 @@ nondupes <- qpcr %>%
 
 # Look at the duplicated samples to see which runs are best
 dupes %>% arrange(Sample.Name)
-
+dupes
 # across the board, samples run on the 7.22 plate worked better than the 7.02 plate, so pick those...
 
 # pick the best rows from the duplicated samples
 best <- dupes %>%
-  filter(File.Name == "bc_symtrad_8.16.txt")%>%
-  filter(C.reps == 0 && D.reps == 0)
-
+  filter(File.Name == "bc_symtrad_8.16.txt") %>% 
+  filter(!Dilution == 100)
+  #filter(!is.na(C.CT.mean)  is.na(D.CT.mean)) 
+  #filter(D.reps >1 || C.reps>1 )
+best
+#filter( D.reps == 0 & C.reps == 0)
 # Merge best runs of dupes back with all the nondupes
 qpcr_good <- bind_rows(nondupes, best)
 
-
+slice(qpcr_good,-c(62,69))
 
 qpcr_good %>%
   select(FragID = Sample.Name,propD) %>%
