@@ -18,17 +18,19 @@ qpcr <- df$result
 qpcr<-qpcr %>%
   mutate(propD = case_when(is.na(D.CT.mean) & !is.na(C.CT.mean) ~ 0,
                                         !is.na(D.CT.mean) & is.na(C.CT.mean) ~ 1,
-                                        !is.na(C.D) ~ 1/((C.D)+1))) 
+                                        !is.na(C.D) ~ 1/((C.D)+1)))
 
+
+qpcr<-separate(qpcr, col = Sample.Name, into = c('Sample.Name','Dilution'), sep = ':', remove = TRUE, convert = FALSE, extra = "warn", fill = "warn")
+qpcr
 # Filter out duplicates (run on muiltiple plates)
 dupesamp <- qpcr %>%
   count(Sample.Name) %>%
-  filter(n > 1)
+  filter(n > 2)
 dupesamp
 
 dupes<- qpcr %>%
   filter(Sample.Name %in% dupesamp$Sample.Name)
-
 
 nondupes <- qpcr %>%
   filter(!Sample.Name %in% dupes$Sample.Name)
@@ -40,7 +42,8 @@ dupes %>% arrange(Sample.Name)
 
 # pick the best rows from the duplicated samples
 best <- dupes %>%
-  filter(File.Name == "bc_symtrad_7.22.txt")
+  filter(File.Name == "bc_symtrad_8.16.txt")%>%
+  filter(C.reps == 0 && D.reps == 0)
 
 # Merge best runs of dupes back with all the nondupes
 qpcr_good <- bind_rows(nondupes, best)
@@ -55,8 +58,7 @@ qpcr_good %>%
 
 #mutate(prop = 1/((C.D)+1))
 #%>% head()
-view(qpcr
-  )
+view(qpcr)
 #add_column()
 
 #fluornorm-> flouroscent normalization, has to do with the difference in fluoroscent dyes VIC & FAM
