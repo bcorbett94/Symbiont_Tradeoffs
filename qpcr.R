@@ -62,13 +62,15 @@ best
 # Merge best runs of dupes back with all the nondupes
 qpcr_good <- bind_rows(nondupes, best)
 
-#qpcr_good<-slice(qpcr_good,-c(62,69,31,43,58))
+
+#quality control, removing symbionts that only amplified once 
+qpcr_good<-qpcr_good %>% 
+  mutate(propD= case_when(C.reps == 1 ~ 1, D.reps == 1 ~ 0, TRUE ~ propD))
+
 qpcr_good %>%
   select(FragID = Sample.Name,propD) %>%
   write_csv("Data/qPCR/proportionD.csv") 
 
-#mutate(prop = 1/((C.D)+1))
-#%>% head()
 view(qpcr_good)
 #add_column()
 
@@ -77,8 +79,5 @@ view(qpcr_good)
 #copy number: for actin gene, genome has more than one actin, 
 #extract -> extract efficiency, erxtract from 100 cells probably getting 80 percent of it 
 #get proportion of D, 1/((C+D)
-#qpcr %>%
- # mutate(prop = 1/((C.D)+1))
-  #add_column()
-  
-View(qpcr)
+
+
