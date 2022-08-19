@@ -22,47 +22,54 @@ qpcr<-qpcr %>%
 
 
 qpcr<-separate(qpcr, col = Sample.Name, into = c('Sample.Name','Dilution'), sep = ':', remove = TRUE, convert = FALSE, extra = "warn", fill = "warn")
-qpcr
+qpcr <- as_tibble(qpcr)
+
+#Filtering out Samples that didn't work
+
+qpcr_good<-qpcr %>% 
+  filter (!(C.reps == 0 & D.reps ==0)) %>%
+  filter(!(C.reps <= 1 & D.reps <= 1)) %>%
+  filter(!Sample.Name== "positive",!Sample.Name == "negative")
+
+bad<-anti_join(qpcr,qpcr_good)
+bad
 # Filter out duplicates (run on muiltiple plates)
 
-dupesamp <- qpcr %>%
+dupesamp <- qpcr_good %>%
   count(Sample.Name) %>%
-  filter(n > 2)
+  filter(n>=2)
 dupesamp
 
-dupes<- qpcr %>%
-  filter(Sample.Name %in% dupesamp$Sample.Name)
 
-nondupes <- qpcr %>%
+dupes<- qpcr_good %>%
+  filter(Sample.Name %in% dupesamp$Sample.Name)
+dupes
+nondupes <- qpcr_good %>%
   filter(!Sample.Name %in% dupes$Sample.Name)
 
 # Look at the duplicated samples to see which runs are best
 dupes %>% arrange(Sample.Name)
-dupes
 # across the board, samples run on the 7.22 plate worked better than the 7.02 plate, so pick those...
 
-# pick the best rows from the duplicated samples
+# pick the best rows from the duplicated samples, Turbinaria only run, output nine observations for plate run on 8.16
 best <- dupes %>%
-  filter(File.Name == "bc_symtrad_8.16.txt") %>% 
-  filter(!Dilution == 100)
-  #filter(!is.na(C.CT.mean)  is.na(D.CT.mean)) 
-  #filter(D.reps >1 || C.reps>1 )
+  filter(File.Name != "bc_symtrad1_7.02.txt")%>%
+  filter(File.Name != "bc_symtrad2_7.02.txt") %>%
+  filter(Dilution!=100 | is.na(Dilution))%>%
+  slice(-c(11,15))
 best
-#filter( D.reps == 0 & C.reps == 0)
+
 # Merge best runs of dupes back with all the nondupes
 qpcr_good <- bind_rows(nondupes, best)
 
-slice(qpcr_good,-c(62,69))
-
+#qpcr_good<-slice(qpcr_good,-c(62,69,31,43,58))
 qpcr_good %>%
   select(FragID = Sample.Name,propD) %>%
-  filter(!FragID == "positive",!FragID == "negative") %>% 
   write_csv("Data/qPCR/proportionD.csv") 
-
 
 #mutate(prop = 1/((C.D)+1))
 #%>% head()
-view(qpcr)
+view(qpcr_good)
 #add_column()
 
 #fluornorm-> flouroscent normalization, has to do with the difference in fluoroscent dyes VIC & FAM
