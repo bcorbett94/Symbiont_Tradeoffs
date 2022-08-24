@@ -7,6 +7,12 @@ bw_mastersheet <- read_csv("Data/Buoyant_Weight/bw_mastersheet.csv") %>%
          colony = str_sub(FragID, 1, 2)) %>%
   full_join(propD)
 
+# count frags of each colony that are C or D dominated
+bw_mastersheet %>%
+  distinct(FragID, colony, propD) %>%
+  group_by(colony, propD>.5)%>%
+  summarise(n = n())
+
 # Create function to convert buoyant weight to dry weight based on temperature and skeletal density
 bw.dw <- function(bw, temp, CoralDens) {
   StdAir <- 39.092
