@@ -1,5 +1,6 @@
 library(tidyverse)
 propD<-read_csv("Data/qPCR/proportionD.csv")
+std_w<-read_csv("Data/qPCR/std.csv")
 
 # Import buoyant weight data
 bw_mastersheet <- read_csv("Data/Buoyant_Weight/bw_mastersheet.csv") %>%
@@ -49,13 +50,14 @@ fig %+% filter(bw_mastersheet, !is.na(species))
 # and we need to QC these. Did they break? Did they have partial mortality?
 lost_weight <- bw_mastersheet %>%
   group_by(FragID) %>%
-  filter(weight_coral[TimePoint == 3] < weight_coral[TimePoint == 2])
+  filter(weight_coral[TimePoint == 4] < weight_coral[TimePoint == 2])
 
 #############
 # Calculate percent growth
 df <- bw_mastersheet %>%
   group_by(FragID,colony, species, propD) %>%
   summarise(perc_change = (weight_coral[TimePoint == 2] - weight_coral[TimePoint == 1])/(weight_coral[TimePoint == 1])*100)
+
 #summarise(perc_change = (weight[TimePoint == 2] -weight[TimePoint == 1])/(weight[TimePoint == 1])*100)
 #group_By<- tidyverse function that uses column names (no spaces, lower case etc), to make certain cgoups 
 
