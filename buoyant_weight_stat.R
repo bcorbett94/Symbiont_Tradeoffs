@@ -1,12 +1,27 @@
 library(tidyverse)
+library(knitr)
 propD<-read_csv("Data/qPCR/proportionD.csv")
 std_w<-read_csv("Data/qPCR/std.csv")
 
+
+#offset data
+offset<-std_w %>%
+  rowwise() %>%
+  mutate(offset = mean(c(`perc std 1`,`perc std 2`)))
+
 # Import buoyant weight data
 bw_mastersheet <- read_csv("Data/Buoyant_Weight/bw_mastersheet.csv") %>%
+  full_join(offset)%>% 
   mutate(species = str_sub(FragID, 1, 1),
-         colony = str_sub(FragID, 1, 2)) %>%
+         colony = str_sub(FragID, 1, 2),
+         pedw = case_when(pedestal == 1 ~ 2.308/offset,
+                          pedestal == 2 ~ 2.860/offset)) %>%
+  mutate(adj_w = weight/offset,
+         final= adj_w-pedw)%>%
   full_join(propD)
+ 
+
+#adding column using offset values to adjust weight
 
 # count frags of each colony that are C or D dominated
 bw_mastersheet %>%
@@ -27,14 +42,9 @@ bw.dw <- function(bw, temp, CoralDens) {
 
 # Remove pedestal weight, and convert coral buoyant weight to dry weight
 bw_mastersheet <- bw_mastersheet %>%
-  mutate(bw_coral = case_when(pedestal == 1 ~ weight - 2.308,
-                              pedestal == 2 ~ weight - 2.860),
-        coraldens = case_when(species == "T" ~ 2.1,                # REPLACE 2.1 WITH TURBINARIA SKELETAL DENSITY
+  mutate(coraldens = case_when(species == "T" ~ 2.1,                # REPLACE 2.1 WITH TURBINARIA SKELETAL DENSITY
                               species == "P" ~ 2.1),               # REPLACE 2.1 WITH POCILLOPORA SKELETAL DENSITY
-     weight_coral = pmap_dbl(.l = list(bw_coral, as.numeric(temp), coraldens), ~bw.dw(..1, ..2, ..3)))
-  
-
-
+         weight_coral = pmap_dbl(.l = list(final, as.numeric(temp), coraldens), ~bw.dw(..1, ..2, ..3)))
 
 #############
 # Plot weight over time
@@ -56,32 +66,32 @@ lost_weight <- bw_mastersheet %>%
 # Calculate percent growth
 df <- bw_mastersheet %>%
   group_by(FragID,colony, species, propD) %>%
-  summarise(perc_change = (weight_coral[TimePoint == 2] - weight_coral[TimePoint == 1])/(weight_coral[TimePoint == 1])*100)
-
+  summarise(perc_change1 = (weight_coral[TimePoint == 4] - weight_coral[TimePoint == 1])/(weight_coral[TimePoint == 1])*100)
+  #summarise(perc_change2 = (weight_coral[TimePoint == 3] - weight_coral[TimePoint == 1])/(weight_coral[TimePoint == 1])*100)
+  #summarise(perc_change3 = (weight_coral[TimePoint == 2] - weight_coral[TimePoint == 1])/(weight_coral[TimePoint == 1])*100)
 #summarise(perc_change = (weight[TimePoint == 2] -weight[TimePoint == 1])/(weight[TimePoint == 1])*100)
 #group_By<- tidyverse function that uses column names (no spaces, lower case etc), to make certain cgoups 
 
 
 #############
-# Plot Pocillopora growth
+# Plot Pocillopora growth, change perc_change# to run multiple anovas
 df %>%
-  filter(species == "P") %>%
-  ggplot(aes(x=propD, y=perc_change, color = colony))+geom_point()#for P1 & P2
-
+ filter(species == "P") %>%
+  ggplot(aes(x=propD, y=perc_change1, color = colony))+geom_point()#from
+  
 # Analyze Pocillopora
-pmod <- lm(perc_change ~ propD*colony, data = filter(df, species == "P"))
+pmod <- 
+  lm(perc_change1 ~ propD*colony, data = filter(df, species == "P"))
 anova(pmod)
-
-
 
 #############
 # Plot Turbinaria growth
 
 df %>%
   filter(species == "T") %>%
-  ggplot(aes(x=propD, y=perc_change, color = colony))+geom_point()
+  ggplot(aes(x=propD, y=perc_change1, color = colony))+geom_point()#from
 
-mod<-lm(perc_change ~ propD*colony, data = filter(df, species == "T"))
+mod <- lm(perc_change1 ~ propD*colony, data = filter(df, species == "T"))
 anova(mod)
 
 

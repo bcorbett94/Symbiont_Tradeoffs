@@ -72,6 +72,11 @@ qpcr_good %>%
   write_csv("Data/qPCR/proportionD.csv") 
 
 view(qpcr_good)
+
+
+qpcr_good %>%
+  group_by(colony, )
+
 #add_column()
 
 #fluornorm-> flouroscent normalization, has to do with the difference in fluoroscent dyes VIC & FAM
