@@ -59,6 +59,8 @@ best <- dupes %>%
   slice(-c(11,15))
 best
 
+#T2 with C
+
 # Merge best runs of dupes back with all the nondupes
 qpcr_good <- bind_rows(nondupes, best)
 
@@ -73,7 +75,10 @@ qpcr_good %>%
 
 view(qpcr_good)
 
-
+#T2 with C
+new_check <- qpcr_good%>%
+  filter(propD == 0)
+view(new_check)
 qpcr_good %>%
   group_by(colony, )
 
