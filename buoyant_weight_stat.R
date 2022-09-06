@@ -2,7 +2,9 @@ library(tidyverse)
 library(knitr)
 propD<-read_csv("Data/qPCR/proportionD.csv")
 std_w<-read_csv("Data/qPCR/std.csv")
+pam_d<-read_csv("Data/PAM_data/pam_dat.csv")
 
+#convert pam_d into long fo
 
 #offset data
 offset<-std_w %>%
@@ -19,7 +21,7 @@ bw_mastersheet <- read_csv("Data/Buoyant_Weight/bw_mastersheet.csv") %>%
   mutate(adj_w = weight/offset,
          final= adj_w-pedw)%>%
   full_join(propD)
- 
+
 
 #adding column using offset values to adjust weight
 
