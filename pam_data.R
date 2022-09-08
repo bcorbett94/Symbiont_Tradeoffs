@@ -1,11 +1,10 @@
 #Pam DATA and Graphing script
-library(tidyverse)
-library(dplyr)
+
 library(knitr)
-library(ggplot2)
 library(ggthemes)
 library(drc)
 library(broom)
+library(tidyverse)
 propD<-read_csv("Data/qPCR/proportionD.csv")
 pam_d<-read_csv("Data/PAM_data/pam_dat.csv")
 
@@ -38,7 +37,7 @@ ggplot(pam_sym, aes (x = temp, y = FvFm, color = dom))+
 
 # Define function to fit 3-parameter LL model to data and return NULL if fitting error
 ll3 <- function(data) {
-  drm(FvFm ~ temp, data = data, 
+  drc::drm(FvFm ~ temp, data = data, 
       fct = LL.3(names = c("hill", "max", "ED50")),
       upperl = c(100, 0.7, 40),
       lowerl = c(20, 0.3, 30))}
@@ -47,7 +46,7 @@ tryll3 <- possibly(ll3, otherwise = NULL)
 #nested data, all columns except for grouping variables, fit response curve for every group combo of colony symbionts
 initmods <- pam_sym %>%
   nest(data = c(FragID, species, AOI, temp, propD, FvFm)) %>%
-# Fit the model to each coral, map is using nested data and applies a function previously defined
+  # Fit the model to each coral, map is using nested data and applies a function previously defined
   
   mutate(ll3 = map(data, tryll3)) %>%
   # Get model parameters and fitted values/residuals
@@ -74,7 +73,7 @@ f1<- ggplot(vals,aes(x = temp, y = FvFm)) +
   facet_grid(colony ~ dom)+
   geom_line(aes(y = .fitted))+
   geom_vline(lty = 2, aes(xintercept = ed50))+
-  geom_text(aes(x= ed50, y = 0.1, label = round(ed50,2)),nudge_x = -1.4)+
+  geom_text(aes(x= ed50, y = 0.1, label = round(ed50,2)),nudge_x = -1.4) +
   ggtitle("ED50 of T. reniformis and P.damicornis")+
   xlab("Temperature (C)") +ylab("Fv/Fm")+
   theme_stata()+
@@ -111,9 +110,26 @@ ggplot(f2,aes(x=ed50, y =perc_change2, color = dom, shape = species))+
                        breaks = c("C","D"),
                        labels = c("Cladocopium spp.", "Durisdinium spp."))
 
+# Mixed models for growth and ed50
+grmod <- lmerTest::lmer(perc_change2 ~ species * dom + (1|colony), data = f2)
+anova(grmod)
+gremm <- emmeans::emmeans(grmod, specs = c("species", "dom"))
 
+ed50 <- ed50 %>% 
+  mutate(species = if_else(colony %in% c("P1", "P2"), "P", "T"))
+ed50mod <- lmerTest::lmer(estimate ~ species * dom + (1|colony), data = ed50)
+anova(ed50mod)
+ed50emm <- emmeans::emmeans(ed50mod, specs = c("species", "dom"))
 
-ggplot(f2,aes(x=ed50, y =perc_change2, color = species))+
-  geom_point()
+res <- full_join(data.frame(gremm),
+          data.frame(ed50emm),
+          by = c("species", "dom"),
+          suffix = c(".gr", ".ed50"))
+
+ggplot(res, aes(x=emmean.ed50, y = emmean.gr, color = species, shape = dom, group = species)) +
+  geom_line() +
+  geom_point(size = 5) +
+  scale_shape_manual(values = c("C", "D"))
+  
 
 
