@@ -1,4 +1,5 @@
-library(tidyverse)
+ library(tidyverse)
+library(ggplot2)
 library(knitr)
 propD<-read_csv("Data/qPCR/proportionD.csv")
 std_w<-read_csv("Data/qPCR/std.csv")
@@ -56,7 +57,7 @@ fig <- ggplot(bw_mastersheet, aes(x = date, y = weight_coral,
   geom_line() +
   facet_wrap(~species)
 # Bryce: there is a row with NA for species. Track down why this is there and remove it upstream.
-fig %+% filter(bw_mastersheet, !is.na(species))
+fig %>% filter(bw_mastersheet, !is.na(species))
 
 # There are quite a few frags that decrease in weight between time points
 # and we need to QC these. Did they break? Did they have partial mortality?
@@ -68,10 +69,9 @@ lost_weight <- bw_mastersheet %>%
 # Calculate percent growth
 df <- bw_mastersheet %>%
   group_by(FragID,colony, species, propD) %>%
-  summarise(perc_change1 = (weight_coral[TimePoint == 4] - weight_coral[TimePoint == 1])/(weight_coral[TimePoint == 1])*100)
-  #summarise(perc_change2 = (weight_coral[TimePoint == 3] - weight_coral[TimePoint == 1])/(weight_coral[TimePoint == 1])*100)
-  #summarise(perc_change3 = (weight_coral[TimePoint == 2] - weight_coral[TimePoint == 1])/(weight_coral[TimePoint == 1])*100)
-#summarise(perc_change = (weight[TimePoint == 2] -weight[TimePoint == 1])/(weight[TimePoint == 1])*100)
+  #summarise(perc_change1 = (weight_coral[TimePoint == 4] - weight_coral[TimePoint == 1])/(weight_coral[TimePoint == 1])*100)
+  summarise(perc_change2 = (weight_coral[TimePoint == 3] - weight_coral[TimePoint == 1])/(weight_coral[TimePoint == 1])*100)
+  
 #group_By<- tidyverse function that uses column names (no spaces, lower case etc), to make certain cgoups 
 
 
@@ -79,11 +79,11 @@ df <- bw_mastersheet %>%
 # Plot Pocillopora growth, change perc_change# to run multiple anovas
 df %>%
  filter(species == "P") %>%
-  ggplot(aes(x=propD, y=perc_change1, color = colony))+geom_point()#from
+  ggplot(aes(x=propD, y=perc_change2, color = colony))+geom_point()#from
   
 # Analyze Pocillopora
 pmod <- 
-  lm(perc_change1 ~ propD*colony, data = filter(df, species == "P"))
+  lm(perc_change2 ~ propD*colony, data = filter(df, species == "P"))
 anova(pmod)
 
 #############
@@ -91,9 +91,9 @@ anova(pmod)
 
 df %>%
   filter(species == "T") %>%
-  ggplot(aes(x=propD, y=perc_change1, color = colony))+geom_point()#from
+  ggplot(aes(x=propD, y=perc_change2, color = colony))+geom_point()#from
 
-mod <- lm(perc_change1 ~ propD*colony, data = filter(df, species == "T"))
+mod <- lm(perc_change2 ~ propD*colony, data = filter(df, species == "T"))
 anova(mod)
 
 
