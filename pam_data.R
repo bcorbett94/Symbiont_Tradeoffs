@@ -111,9 +111,9 @@ ggplot(f2,aes(x=ed50, y =perc_change2, color = dom, shape = species))+
                        labels = c("Cladocopium spp.", "Durisdinium spp."))
 
 # Mixed models for growth and ed50
-grmod <- lmerTest::lmer(perc_change2 ~ species * dom + (1|colony), data = f2)
+grmod <- lmerTest::lmer(perc_change2 ~ species * propD + (1|colony), data = f2)
 anova(grmod)
-gremm <- emmeans::emmeans(grmod, specs = c("species", "dom"))
+gremm <- emmeans::emmeans(grmod, specs = c("species", "propD"), at = list(propD = c(0, 1)))
 
 ed50 <- ed50 %>% 
   mutate(species = if_else(colony %in% c("P1", "P2"), "P", "T"))
@@ -121,15 +121,18 @@ ed50mod <- lmerTest::lmer(estimate ~ species * dom + (1|colony), data = ed50)
 anova(ed50mod)
 ed50emm <- emmeans::emmeans(ed50mod, specs = c("species", "dom"))
 
-res <- full_join(data.frame(gremm),
+res <- full_join(mutate(data.frame(gremm), dom = if_else(propD == 0, "C", "D")),
           data.frame(ed50emm),
           by = c("species", "dom"),
           suffix = c(".gr", ".ed50"))
 
 ggplot(res, aes(x=emmean.ed50, y = emmean.gr, color = species, shape = dom, group = species)) +
   geom_line() +
-  geom_point(size = 5) +
-  scale_shape_manual(values = c("C", "D"))
+  geom_point(size = 10) +
+  geom_errorbar(aes(xmin = emmean.ed50 - SE.ed50, xmax = emmean.ed50 + SE.ed50)) +
+  geom_errorbar(aes(ymin = emmean.gr - SE.gr, ymax = emmean.gr + SE.gr))+
+  scale_shape_manual(values = c("C", "D")) +
+  labs(x = "Heat tolerance (ED50)", y = "Growth (%)")
   
 
 
